@@ -1,10 +1,8 @@
 
-function firstSelectedTake()
+function getFirstSelectedTake()
 
 	local activeProjectIndex = 0
 	local selectedItemIndex = 0
-	local selectedMediaItem
-
 	local selectedMediaItem = reaper.GetSelectedMediaItem(activeProjectIndex, selectedItemIndex)
 
 	if selectedMediaItem == nil then
@@ -14,9 +12,15 @@ function firstSelectedTake()
 	return reaper.GetActiveTake(selectedMediaItem)
 end
 
-function getNumberOfNotes()
+function getNumberOfSelectedItems()
+	
+	local activeProjectIndex = 0
+	return reaper.CountSelectedMediaItems(activeProjectIndex)
+end
 
-  local _, numberOfNotes = reaper.MIDI_CountEvts(firstSelectedTake())
+function getNumberOfNotes(mediaItemTake)
+
+  local _, numberOfNotes = reaper.MIDI_CountEvts(mediaItemTake)
   return numberOfNotes
 end
 
@@ -38,7 +42,7 @@ function getCurrentVelocity(velocityArg)
   return 96
 end
 
-function insertMidiNote(startingPositionArg, endingPositionArg, noteChannelArg, notePitchArg, noteVelocityArg)
+function insertMidiNote(selectedTake, startingPositionArg, endingPositionArg, noteChannelArg, notePitchArg, noteVelocityArg)
 
 	local keepNotesSelected = false
 	local noteIsMuted = false
@@ -47,5 +51,5 @@ function insertMidiNote(startingPositionArg, endingPositionArg, noteChannelArg, 
 	local velocity = getCurrentVelocity(noteVelocityArg)
 	local noSort = false
 
-	reaper.MIDI_InsertNote(firstSelectedTake(), keepNotesSelected, noteIsMuted, startingPositionArg, endingPositionArg, channel, notePitchArg, velocity, noSort)
+	reaper.MIDI_InsertNote(selectedTake, keepNotesSelected, noteIsMuted, startingPositionArg, endingPositionArg, channel, notePitchArg, velocity, noSort)
 end

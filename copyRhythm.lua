@@ -2,9 +2,9 @@ local function loadDependency(arg)
 	dofile(debug.getinfo(1,'S').source:match[[^@?(.*[\/])[^\/]-$]] .. arg .. ".lua")
 end
 
-loadDependency("preferences")
 loadDependency("util")
 loadDependency("Pickle")
+loadDependency("preferences")
 loadDependency("midiEditor")
 
 
@@ -28,14 +28,14 @@ end
 -- {{startPosition, endPosition}, {channels}, {velocities}}
 -- if there are more notes on the destination then get the default channel/velocity
 
-local function getRhythmNotes()
+local function getRhythmNotes(firstSelectedTake)
 
-	local numberOfNotes = getNumberOfNotes()
+	local numberOfNotes = getNumberOfNotes(firstSelectedTake)
 	local rhythmNotes = {}
 
 	for noteIndex = 0, numberOfNotes-1 do
 
-		local _, noteIsSelected, noteIsMuted, noteStartPositionPPQ, noteEndPositionPPQ, noteChannel, notePitch, noteVelocity  = reaper.MIDI_GetNote(firstSelectedTake(), noteIndex)
+		local _, noteIsSelected, noteIsMuted, noteStartPositionPPQ, noteEndPositionPPQ, noteChannel, notePitch, noteVelocity  = reaper.MIDI_GetNote(firstSelectedTake, noteIndex)
 	
 		if not (noteStartPositionPPQ == 0 and noteEndPositionPPQ == 0) then
 
@@ -74,16 +74,20 @@ end
 
 --
 
-local selectedTake = firstSelectedTake()
-if selectedTake ~= nil then
+local firstSelectedTake = getFirstSelectedTake()
 
-		local rhythmNotes = getRhythmNotes()
-
-		if rhythmNotes == nil then
-			return
-		end
-
-		setRhythmNotesInPreferences(rhythmNotes)
+if firstSelectedTake == nil then
+	return
 end
+
+
+local rhythmNotes = getRhythmNotes(firstSelectedTake)
+
+if rhythmNotes == nil then
+	return
+end
+
+setRhythmNotesInPreferences(rhythmNotes)
+
 
 
