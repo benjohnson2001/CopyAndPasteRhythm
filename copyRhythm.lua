@@ -1,8 +1,12 @@
-local workingDirectory = reaper.GetResourcePath() .. "/Scripts/CopyAndPasteRhythm"
-dofile(workingDirectory .. "/preferences")
-dofile(workingDirectory .. "/util")
-dofile(workingDirectory .. "/Pickle")
-dofile(workingDirectory .. "/midiEditor")
+local function loadDependency(arg)
+	dofile(debug.getinfo(1,'S').source:match[[^@?(.*[\/])[^\/]-$]] .. arg .. ".lua")
+end
+
+loadDependency("preferences")
+loadDependency("util")
+loadDependency("Pickle")
+loadDependency("midiEditor")
+
 
 local function getRhythmNote(rhythmNotes, startingNotePosition, endingNotePosition)
 

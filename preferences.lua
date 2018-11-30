@@ -1,5 +1,8 @@
-local workingDirectory = reaper.GetResourcePath() .. "/Scripts/CopyAndPasteRhythm"
-dofile(workingDirectory .. "/Pickle")
+local function loadDependency(arg)
+  dofile(debug.getinfo(1,'S').source:match[[^@?(.*[\/])[^\/]-$]] .. arg .. ".lua")
+end
+
+loadDependency("Pickle")
 
 
 local activeProjectIndex = 0
