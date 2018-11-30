@@ -1,8 +1,8 @@
 local workingDirectory = reaper.GetResourcePath() .. "/Scripts/CopyAndPasteRhythm"
-require(workingDirectory .. "/preferences")
-require(workingDirectory .. "/util")
-require(workingDirectory .. "/Pickle")
-require(workingDirectory .. "/midiEditor")
+dofile(workingDirectory .. "/preferences")
+dofile(workingDirectory .. "/util")
+dofile(workingDirectory .. "/Pickle")
+dofile(workingDirectory .. "/midiEditor")
 
 local function getRhythmNote(rhythmNotes, startingNotePosition, endingNotePosition)
 

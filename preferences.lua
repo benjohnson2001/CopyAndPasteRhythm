@@ -1,5 +1,5 @@
 local workingDirectory = reaper.GetResourcePath() .. "/Scripts/CopyAndPasteRhythm"
-require(workingDirectory .. "/Pickle")
+dofile(workingDirectory .. "/Pickle")
 
 
 local activeProjectIndex = 0
