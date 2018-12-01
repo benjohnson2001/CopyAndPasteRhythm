@@ -17,5 +17,5 @@ About:
     Reaper scripts for copy/pasting rhythm information to Media Items, leaving pitches intact
     
     #### How do I use it?
-    There is an instructional gif [here](https://github.com/benjohnson2001/CopyAndPasteRhythm/raw/release/CopyAndPasteRhythm/copypasterhythm.gif)
+    There is an instructional gif [here](https://github.com/benjohnson2001/CopyAndPasteRhythm/raw/release/copypasterhythm.gif)
 --]]
