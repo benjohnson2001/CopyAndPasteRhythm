@@ -9,6 +9,7 @@ local activeProjectIndex = 0
 local sectionName = "com.pandabot.CopyAndPasteRhythm"
 
 local rhythmNotesKey = "rhythmNotes"
+local scriptIsRunningKey = "scriptIsRunning"
 
 --
 
@@ -30,9 +31,15 @@ end
 
 --[[ ]]--
 
-
 function getRhythmNotesFromPreferences()
-  return unpickle(getValue(rhythmNotesKey))
+
+	local pickledValue = getValue(rhythmNotesKey)
+
+	if pickledValue == nil then
+		return nil
+	end
+
+  return unpickle(pickledValue)
 end
 
 function setRhythmNotesInPreferences(arg)

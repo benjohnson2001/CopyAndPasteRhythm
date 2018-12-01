@@ -1,6 +1,18 @@
 function print(arg)
   reaper.ShowConsoleMsg(tostring(arg) .. "\n")
 end
+
+function startUndoBlock()
+	reaper.Undo_BeginBlock()
+end
+
+function endUndoBlock(actionDescription)
+	reaper.Undo_OnStateChange(actionDescription)
+	reaper.Undo_EndBlock(actionDescription, -1)
+end
+
+function emptyFunctionToPreventAutomaticCreationOfUndoPoint()
+end
 ----------------------------------------------
 -- Pickle.lua
 -- A table serialization utility for lua
@@ -94,6 +106,7 @@ local activeProjectIndex = 0
 local sectionName = "com.pandabot.CopyAndPasteRhythm"
 
 local rhythmNotesKey = "rhythmNotes"
+local scriptIsRunningKey = "scriptIsRunning"
 
 --
 
@@ -115,9 +128,15 @@ end
 
 --[[ ]]--
 
-
 function getRhythmNotesFromPreferences()
-  return unpickle(getValue(rhythmNotesKey))
+
+	local pickledValue = getValue(rhythmNotesKey)
+
+	if pickledValue == nil then
+		return nil
+	end
+
+  return unpickle(pickledValue)
 end
 
 function setRhythmNotesInPreferences(arg)
@@ -174,6 +193,7 @@ function insertMidiNote(selectedTake, startingPositionArg, endingPositionArg, no
 
 	local channel = getCurrentChannel(noteChannelArg)
 	local velocity = getCurrentVelocity(noteVelocityArg)
+
 	local noSort = false
 
 	reaper.MIDI_InsertNote(selectedTake, keepNotesSelected, noteIsMuted, startingPositionArg, endingPositionArg, channel, notePitchArg, velocity, noSort)
@@ -184,7 +204,7 @@ end
 
 
 
-local function getExistingNote(existingNotes, startingNotePosition)
+local function getExistingNoteIndex(existingNotes, startingNotePosition)
 
 	for i = 1, #existingNotes do
 
@@ -192,7 +212,7 @@ local function getExistingNote(existingNotes, startingNotePosition)
 		local existingNoteStartingPosition = existingNotes[i][1]
 
 	  if existingNoteStartingPosition == startingNotePosition then
-	  	return existingNote
+	  	return i
 	  end
 	end
 
@@ -210,11 +230,11 @@ local function getExistingNotes(selectedTake)
 
 		local _, noteIsSelected, noteIsMuted, noteStartPositionPPQ, noteEndPositionPPQ, noteChannel, notePitch, noteVelocity = reaper.MIDI_GetNote(selectedTake, noteIndex)
 
-			local existingNote = getExistingNote(existingNotes, noteStartPositionPPQ)
+			local existingNoteIndex = getExistingNoteIndex(existingNotes, noteStartPositionPPQ)
 
-			if existingNote == nil then
+			if existingNoteIndex == nil then
 
-				existingNote = {}
+				local existingNote = {}
 				table.insert(existingNote, noteStartPositionPPQ)
 
 				local existingNoteChannels = {}
@@ -229,13 +249,18 @@ local function getExistingNotes(selectedTake)
 				table.insert(existingNote, existingNoteChannels)
 				table.insert(existingNote, existingNoteVelocities)
 				table.insert(existingNote, existingNotePitches)
+
+				table.insert(existingNotes, existingNote)
 			else
+
+				local existingNote = existingNotes[existingNoteIndex]
+
 				table.insert(existingNote[2], noteChannel)
 				table.insert(existingNote[3], noteVelocity)
 				table.insert(existingNote[4], notePitch)
-			end
 
-			table.insert(existingNotes, existingNote)
+				table.insert(existingNotes[existingNoteIndex], existingNote)
+			end
 	end
 
 	return existingNotes
@@ -298,14 +323,19 @@ local function deleteAllNotes(selectedTake)
 end
 
 
-local function pasteRhythm(mediaItem)
+local function pasteRhythm(rhythmNotes, mediaItem)
 
 	local selectedTake = reaper.GetActiveTake(mediaItem)
+	
+	local existingNotes = getExistingNotes(selectedTake)  
 
-	local rhythmNotes = getRhythmNotesFromPreferences()
-	local existingNotes = getExistingNotes(selectedTake)
+	if #existingNotes == 0 then
+		return
+	end
 
 	deleteAllNotes(selectedTake)
+
+	local previousNoteVelocity
 
 	for i = 1, #rhythmNotes do
 
@@ -314,27 +344,51 @@ local function pasteRhythm(mediaItem)
 		local rhythmNoteStartingPosition = rhythmNote[1][1]
 		local rhythmNoteEndingPosition = rhythmNote[1][2]
 
-		local rhythmNoteChannels = rhythmNote[2]
+		--local rhythmNoteChannels = rhythmNote[2]
 
 		local notePitches = getNearestSetOfNotePitches(existingNotes, rhythmNoteStartingPosition)
 		local noteChannels = getNearestSetOfNoteChannels(existingNotes, rhythmNoteStartingPosition)
 
 		local rhythmNoteVelocities = rhythmNote[3]
 
-		for i = 1, #notePitches do
-			insertMidiNote(selectedTake, rhythmNoteStartingPosition, rhythmNoteEndingPosition, noteChannels[i], notePitches[i], rhythmNoteVelocities[i])
+		for j = 1, #notePitches do
+
+			local velocity = rhythmNoteVelocities[j]
+
+			if velocity == nil then
+				velocity = previousNoteVelocity
+			else
+				previousNoteVelocity = velocity
+			end
+
+			insertMidiNote(selectedTake, rhythmNoteStartingPosition, rhythmNoteEndingPosition, noteChannels[j], notePitches[j], velocity)
 		end
 	end
 end
 
 --
 
+
+reaper.defer(emptyFunctionToPreventAutomaticCreationOfUndoPoint)
+
 local numberOfSelectedItems = getNumberOfSelectedItems()
+
+if numberOfSelectedItems == 0 then
+	return
+end
+
+local rhythmNotes = getRhythmNotesFromPreferences()
+
+if rhythmNotes == nil then
+	return
+end
 
 for i = 0, numberOfSelectedItems-1 do
 
 	local activeProjectIndex = 0
-	local selectedMediaITem = reaper.GetSelectedMediaItem(activeProjectIndex, i)
-	pasteRhythm(selectedMediaITem)
-end
+	local selectedMediaItem = reaper.GetSelectedMediaItem(activeProjectIndex, i)
 
+	startUndoBlock()
+		pasteRhythm(rhythmNotes, selectedMediaItem)
+	endUndoBlock("paste rhythm")
+end

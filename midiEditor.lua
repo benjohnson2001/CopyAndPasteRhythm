@@ -49,6 +49,7 @@ function insertMidiNote(selectedTake, startingPositionArg, endingPositionArg, no
 
 	local channel = getCurrentChannel(noteChannelArg)
 	local velocity = getCurrentVelocity(noteVelocityArg)
+
 	local noSort = false
 
 	reaper.MIDI_InsertNote(selectedTake, keepNotesSelected, noteIsMuted, startingPositionArg, endingPositionArg, channel, notePitchArg, velocity, noSort)

@@ -8,15 +8,15 @@ loadDependency("preferences")
 loadDependency("midiEditor")
 
 
-local function getRhythmNote(rhythmNotes, startingNotePosition, endingNotePosition)
+local function getRhythmNoteIndex(rhythmNotes, startingNotePosition, endingNotePosition)
 
 	for i = 1, #rhythmNotes do
 
 		local rhythmNote = rhythmNotes[i]
-		local rhythmNotePositions = rhythmNotes[i][1]
+		local rhythmNotePositions = rhythmNote[1]
 
 	  if rhythmNotePositions[1] == startingNotePosition and rhythmNotePositions[2] == endingNotePosition then
-	      return rhythmNote
+	  	return i
 	  end
 	end
 
@@ -39,10 +39,10 @@ local function getRhythmNotes(firstSelectedTake)
 	
 		if not (noteStartPositionPPQ == 0 and noteEndPositionPPQ == 0) then
 
-			local rhythmNote = getRhythmNote(rhythmNotes, noteStartPositionPPQ, noteEndPositionPPQ)
+			local rhythmNoteIndex = getRhythmNoteIndex(rhythmNotes, noteStartPositionPPQ, noteEndPositionPPQ)
 
-			if rhythmNote == nil then
-				rhythmNote = {}
+			if rhythmNoteIndex == nil then
+				local rhythmNote = {}
 
 				local rhythmNotePositions = {}
 				table.insert(rhythmNotePositions, noteStartPositionPPQ)
@@ -58,13 +58,16 @@ local function getRhythmNotes(firstSelectedTake)
 				table.insert(rhythmNote, rhythmNoteChannels)
 				table.insert(rhythmNote, rhythmNoteVelocities)
 
+				table.insert(rhythmNotes, rhythmNote)
 			else
+
+				local rhythmNote = rhythmNotes[rhythmNoteIndex]
 
 				table.insert(rhythmNote[2], noteChannel)
 				table.insert(rhythmNote[3], noteVelocity)
+				
+				table.insert(rhythmNotes[rhythmNoteIndex], rhythmNote)
 			end
-
-			table.insert(rhythmNotes, rhythmNote)
 		end
 	end
 
@@ -73,6 +76,8 @@ end
 
 
 --
+
+reaper.defer(emptyFunctionToPreventAutomaticCreationOfUndoPoint)
 
 local firstSelectedTake = getFirstSelectedTake()
 
@@ -87,7 +92,7 @@ if rhythmNotes == nil then
 	return
 end
 
-setRhythmNotesInPreferences(rhythmNotes)
+startUndoBlock()
 
-
-
+	setRhythmNotesInPreferences(rhythmNotes)
+endUndoBlock("copy rhythm")

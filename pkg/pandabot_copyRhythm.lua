@@ -1,6 +1,18 @@
 function print(arg)
   reaper.ShowConsoleMsg(tostring(arg) .. "\n")
 end
+
+function startUndoBlock()
+	reaper.Undo_BeginBlock()
+end
+
+function endUndoBlock(actionDescription)
+	reaper.Undo_OnStateChange(actionDescription)
+	reaper.Undo_EndBlock(actionDescription, -1)
+end
+
+function emptyFunctionToPreventAutomaticCreationOfUndoPoint()
+end
 ----------------------------------------------
 -- Pickle.lua
 -- A table serialization utility for lua
@@ -94,6 +106,7 @@ local activeProjectIndex = 0
 local sectionName = "com.pandabot.CopyAndPasteRhythm"
 
 local rhythmNotesKey = "rhythmNotes"
+local scriptIsRunningKey = "scriptIsRunning"
 
 --
 
@@ -115,9 +128,15 @@ end
 
 --[[ ]]--
 
-
 function getRhythmNotesFromPreferences()
-  return unpickle(getValue(rhythmNotesKey))
+
+	local pickledValue = getValue(rhythmNotesKey)
+
+	if pickledValue == nil then
+		return nil
+	end
+
+  return unpickle(pickledValue)
 end
 
 function setRhythmNotesInPreferences(arg)
@@ -174,6 +193,7 @@ function insertMidiNote(selectedTake, startingPositionArg, endingPositionArg, no
 
 	local channel = getCurrentChannel(noteChannelArg)
 	local velocity = getCurrentVelocity(noteVelocityArg)
+
 	local noSort = false
 
 	reaper.MIDI_InsertNote(selectedTake, keepNotesSelected, noteIsMuted, startingPositionArg, endingPositionArg, channel, notePitchArg, velocity, noSort)
@@ -184,15 +204,15 @@ end
 
 
 
-local function getRhythmNote(rhythmNotes, startingNotePosition, endingNotePosition)
+local function getRhythmNoteIndex(rhythmNotes, startingNotePosition, endingNotePosition)
 
 	for i = 1, #rhythmNotes do
 
 		local rhythmNote = rhythmNotes[i]
-		local rhythmNotePositions = rhythmNotes[i][1]
+		local rhythmNotePositions = rhythmNote[1]
 
 	  if rhythmNotePositions[1] == startingNotePosition and rhythmNotePositions[2] == endingNotePosition then
-	      return rhythmNote
+	  	return i
 	  end
 	end
 
@@ -215,10 +235,10 @@ local function getRhythmNotes(firstSelectedTake)
 	
 		if not (noteStartPositionPPQ == 0 and noteEndPositionPPQ == 0) then
 
-			local rhythmNote = getRhythmNote(rhythmNotes, noteStartPositionPPQ, noteEndPositionPPQ)
+			local rhythmNoteIndex = getRhythmNoteIndex(rhythmNotes, noteStartPositionPPQ, noteEndPositionPPQ)
 
-			if rhythmNote == nil then
-				rhythmNote = {}
+			if rhythmNoteIndex == nil then
+				local rhythmNote = {}
 
 				local rhythmNotePositions = {}
 				table.insert(rhythmNotePositions, noteStartPositionPPQ)
@@ -234,13 +254,16 @@ local function getRhythmNotes(firstSelectedTake)
 				table.insert(rhythmNote, rhythmNoteChannels)
 				table.insert(rhythmNote, rhythmNoteVelocities)
 
+				table.insert(rhythmNotes, rhythmNote)
 			else
+
+				local rhythmNote = rhythmNotes[rhythmNoteIndex]
 
 				table.insert(rhythmNote[2], noteChannel)
 				table.insert(rhythmNote[3], noteVelocity)
+				
+				table.insert(rhythmNotes[rhythmNoteIndex], rhythmNote)
 			end
-
-			table.insert(rhythmNotes, rhythmNote)
 		end
 	end
 
@@ -249,6 +272,8 @@ end
 
 
 --
+
+reaper.defer(emptyFunctionToPreventAutomaticCreationOfUndoPoint)
 
 local firstSelectedTake = getFirstSelectedTake()
 
@@ -263,7 +288,7 @@ if rhythmNotes == nil then
 	return
 end
 
-setRhythmNotesInPreferences(rhythmNotes)
+startUndoBlock()
 
-
-
+	setRhythmNotesInPreferences(rhythmNotes)
+endUndoBlock("copy rhythm")
