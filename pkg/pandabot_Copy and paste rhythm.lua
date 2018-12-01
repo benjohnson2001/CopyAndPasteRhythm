@@ -13,7 +13,7 @@ Provides:
 About:
     ### Copy and Paste Rhythm
     
-    #### What is it?
+    #### What is this?
     Reaper scripts for copy/pasting rhythm information to Media Items, leaving pitches intact
     
     #### How do I use it?
