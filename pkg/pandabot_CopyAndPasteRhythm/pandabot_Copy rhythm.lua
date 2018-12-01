@@ -1,3 +1,5 @@
+-- @noindex
+
 function print(arg)
   reaper.ShowConsoleMsg(tostring(arg) .. "\n")
 end
@@ -96,11 +98,6 @@ function unpickle(s)
   end
   return tables[1]
 end
-local function loadDependency(arg)
-  dofile(debug.getinfo(1,'S').source:match[[^@?(.*[\/])[^\/]-$]] .. arg .. ".lua")
-end
-
-
 
 local activeProjectIndex = 0
 local sectionName = "com.pandabot.CopyAndPasteRhythm"
@@ -198,11 +195,6 @@ function insertMidiNote(selectedTake, startingPositionArg, endingPositionArg, no
 
 	reaper.MIDI_InsertNote(selectedTake, keepNotesSelected, noteIsMuted, startingPositionArg, endingPositionArg, channel, notePitchArg, velocity, noSort)
 end
-local function loadDependency(arg)
-	dofile(debug.getinfo(1,'S').source:match[[^@?(.*[\/])[^\/]-$]] .. arg .. ".lua")
-end
-
-
 
 local function getRhythmNoteIndex(rhythmNotes, startingNotePosition, endingNotePosition)
 
