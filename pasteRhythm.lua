@@ -187,12 +187,13 @@ if rhythmNotes == nil then
 	return
 end
 
+startUndoBlock()
+
 for i = 0, numberOfSelectedItems-1 do
 
 	local activeProjectIndex = 0
 	local selectedMediaItem = reaper.GetSelectedMediaItem(activeProjectIndex, i)
-
-	startUndoBlock()
-		pasteRhythm(rhythmNotes, selectedMediaItem)
-	endUndoBlock("paste rhythm")
+	pasteRhythm(rhythmNotes, selectedMediaItem)
 end
+
+endUndoBlock("paste rhythm")
